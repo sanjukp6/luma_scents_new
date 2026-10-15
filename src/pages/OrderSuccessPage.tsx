@@ -29,75 +29,83 @@ export const OrderSuccessPage: React.FC = () => {
 
     const triggerPurchase = () => {
       const win = window as any;
-      if (typeof win !== 'undefined' && win._mp && typeof win._mp.safeExecute === 'function') {
-        win._mp.safeExecute('evPurchase', () => {
-          if (typeof win.eedl !== 'function') return;
+      if (typeof win === 'undefined') return;
 
-          // 1. Name splitting (fName and lName)
-          const userName = (order.customer && order.customer.name) || '';
-          let fName = '';
-          let lName: string | undefined = undefined;
+      const execute = () => {
+        if (typeof win.eedl !== 'function') return;
 
-          if (userName.indexOf(' ') > -1) {
-            const parts = userName.trim().split(/\s+/);
-            fName = parts[0];
-            lName = parts.slice(1).join(' ');
-          } else {
-            fName = userName;
-            lName = undefined;
-          }
+        // 1. Name splitting (fName and lName)
+        const userName = (order.customer && order.customer.name) || '';
+        let fName = '';
+        let lName: string | undefined = undefined;
 
-          // 2. Phone cleanup (remove +91 and non-digits)
-          const rawPhone = (order.customer && order.customer.phone) || '';
-          const phone = rawPhone.replace(/^\+?91[\s-]*/, '').replace(/\D/g, '');
+        if (userName.indexOf(' ') > -1) {
+          const parts = userName.trim().split(/\s+/);
+          fName = parts[0];
+          lName = parts.slice(1).join(' ');
+        } else {
+          fName = userName;
+          lName = undefined;
+        }
 
-          // 3. Dispatch user_info
-          win.eedl('user_info', {
-            pid: (order.customer && order.customer.email) || order.transactionId,
-            email: (order.customer && order.customer.email) || '',
-            phone: phone,
-            country: 'IN',
-            city: (order.customer && order.customer.city) || '',
-            state: (order.customer && order.customer.state) || '',
-            fName: fName,
-            lName: lName,
-            zip: (order.customer && order.customer.pincode) || '',
-          });
+        // 2. Phone cleanup (remove +91 and non-digits)
+        const rawPhone = (order.customer && order.customer.phone) || '';
+        const phone = rawPhone.replace(/^\+?91[\s-]*/, '').replace(/\D/g, '');
 
-          // 4. Cart ID fallback
-          const cartId =
-            (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('mp_cart_id')) ||
-            ('cart_' + order.transactionId);
-
-          // 5. Items mapping
-          const itemsList = (order.items || []).map((item, idx) => {
-            const prod = item.product;
-            return {
-              item_id: String(prod.id),
-              item_name: prod.name,
-              item_sku: String((prod as any).sku || prod.id),
-              index: idx,
-              price: Number(prod.price),
-              quantity: Number(item.quantity || 1),
-              item_brand: prod.brand || 'Luma Scents',
-              item_category: prod.category || undefined,
-            };
-          });
-
-          // 6. Dispatch mp_purchase
-          win.eedl('mp_purchase', {
-            currency: 'INR',
-            transaction_id: order.transactionId,
-            cart_id: cartId,
-            value: Number(order.total),
-            coupon: undefined,
-            shipping: Number(order.shipping || 0),
-            payment_type: 'Credit Card',
-            tax: 0,
-            items: itemsList,
-            ev_source: 'ingestlabs',
-          });
+        // 3. Dispatch user_info
+        win.eedl('user_info', {
+          pid: (order.customer && order.customer.email) || order.transactionId,
+          email: (order.customer && order.customer.email) || '',
+          phone: phone,
+          country: 'IN',
+          city: (order.customer && order.customer.city) || '',
+          state: (order.customer && order.customer.state) || '',
+          fName: fName,
+          lName: lName,
+          zip: (order.customer && order.customer.pincode) || '',
         });
+
+        // 4. Cart ID fallback
+        const cartId =
+          (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('mp_cart_id')) ||
+          ('cart_' + order.transactionId);
+
+        // 5. Items mapping
+        const itemsList = (order.items || []).map((item, idx) => {
+          const prod = item.product;
+          return {
+            item_id: String(prod.id),
+            item_name: prod.name,
+            item_sku: String((prod as any).sku || prod.id),
+            index: idx,
+            price: Number(prod.price),
+            quantity: Number(item.quantity || 1),
+            item_brand: prod.brand || 'Luma Scents',
+            item_category: prod.category || undefined,
+          };
+        });
+
+        // 6. Dispatch purchase payload
+        const purchasePayload = {
+          currency: order.currency || 'INR',
+          transaction_id: order.transactionId,
+          cart_id: cartId,
+          value: Number(order.total),
+          coupon: undefined,
+          shipping: Number(order.shipping || 0),
+          payment_type: 'Credit Card',
+          tax: 0,
+          items: itemsList,
+          ev_source: 'ingestlabs',
+        };
+
+        win.eedl('purchase', purchasePayload);
+      };
+
+      if (win._mp && typeof win._mp.safeExecute === 'function') {
+        win._mp.safeExecute('evPurchase', execute)();
+      } else {
+        execute();
       }
     };
 
