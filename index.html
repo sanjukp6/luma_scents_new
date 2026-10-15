@@ -24,6 +24,44 @@
       })();
     });
   </script>
+  <script>
+    window.trackMpAddToCart = function (product, quantity) {
+      window._mp.waitUntil(function () { return window._mp && window._mp.eedlInstance; }, 15000, 100, function () {
+        window._mp.safeExecute('evAddToCart', function () {
+          var cartId = window.sessionStorage.getItem('mp_cart_id');
+          if (!cartId) {
+            cartId = 'cart_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
+            window.sessionStorage.setItem('mp_cart_id', cartId);
+          }
+
+          var payload = {
+            currency: 'INR',
+            cart_id: cartId,
+            value: Number(product.price),
+            items: [
+              {
+                item_id: String(product.id),
+                item_name: product.name,
+                item_sku: String(product.sku || product.id),
+                variant_id: product.variant || undefined,
+                index: 0,
+                price: Number(product.price),
+                quantity: Number(quantity || 1),
+                item_brand: product.brand || 'Luma Scents',
+                item_category: product.category || undefined,
+                options: {
+                  volume: product.volume,
+                },
+              },
+            ],
+            ev_source: 'gtm',
+          };
+
+          eedl('mp_add_to_cart', payload);
+        })();
+      });
+    };
+  </script>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />

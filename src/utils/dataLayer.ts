@@ -6,6 +6,7 @@ declare global {
     dataLayer: any[];
     eedl?: (...args: any[]) => void;
     mpDl?: any[];
+    trackMpAddToCart?: (product: Product, quantity: number) => void;
   }
 }
 
@@ -86,10 +87,11 @@ export const trackViewItem = (product: Product) => {
 };
 
 /**
- * 3. Track Add to Cart (GA4 Ecommerce)
+ * 3. Track Add to Cart (GA4 Ecommerce + MagicPixel EEDL)
  * Triggered whenever a product is successfully added to cart.
  */
 export const trackAddToCart = (product: Product, quantity: number) => {
+  // GA4 dataLayer event
   pushToDataLayer({
     event: 'add_to_cart',
     ecommerce: {
@@ -108,4 +110,13 @@ export const trackAddToCart = (product: Product, quantity: number) => {
       ],
     },
   });
+
+  // MagicPixel EEDL mp_add_to_cart tracking
+  if (typeof window !== 'undefined' && typeof window.trackMpAddToCart === 'function') {
+    try {
+      window.trackMpAddToCart(product, quantity);
+    } catch (err) {
+      console.warn('[MagicPixel] Error dispatching trackMpAddToCart:', err);
+    }
+  }
 };
