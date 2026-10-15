@@ -27,15 +27,6 @@ export const pushToDataLayer = (payload: Record<string, any>) => {
 
   window.dataLayer.push(payload);
 
-  // If MagicPixel / EEDL is loaded on the page, also pass event
-  if (typeof window.eedl === 'function') {
-    try {
-      window.eedl(payload.event, payload);
-    } catch {
-      // ignore
-    }
-  }
-
   // Developer-friendly log for easy inspection during tracking tests
   if (import.meta.env.DEV || true) {
     console.log(
