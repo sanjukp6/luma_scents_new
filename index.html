@@ -34,30 +34,72 @@
             window.sessionStorage.setItem('mp_cart_id', cartId);
           }
 
+          var itemObj = {
+            item_id: String(product.id),
+            item_name: product.name,
+            item_sku: String(product.sku || product.id),
+            variant_id: product.variant || undefined,
+            index: 0,
+            price: Number(product.price),
+            quantity: Number(quantity || 1),
+            item_brand: product.brand || 'Luma Scents',
+            item_category: product.category || undefined,
+            options: {
+              volume: product.volume,
+            },
+          };
+
           var payload = {
             currency: 'INR',
             cart_id: cartId,
             value: Number(product.price),
-            items: [
-              {
-                item_id: String(product.id),
-                item_name: product.name,
-                item_sku: String(product.sku || product.id),
-                variant_id: product.variant || undefined,
-                index: 0,
-                price: Number(product.price),
-                quantity: Number(quantity || 1),
-                item_brand: product.brand || 'Luma Scents',
-                item_category: product.category || undefined,
-                options: {
-                  volume: product.volume,
-                },
-              },
-            ],
+            items: [itemObj],
+            item_id: itemObj.item_id,
+            item_name: itemObj.item_name,
+            item_sku: itemObj.item_sku,
+            quantity: itemObj.quantity,
+            price: itemObj.price,
+            items_json: JSON.stringify([itemObj]),
             ev_source: 'gtm',
           };
 
           eedl('add_to_cart', payload);
+        })();
+      });
+    };
+
+    window.trackMpViewItem = function (product) {
+      window._mp.waitUntil(function () { return window._mp && window._mp.eedlInstance; }, 15000, 100, function () {
+        window._mp.safeExecute('evViewItem', function () {
+          var itemObj = {
+            item_id: String(product.id),
+            item_name: product.name,
+            item_sku: String(product.sku || product.id),
+            variant_id: product.variant || undefined,
+            index: 0,
+            price: Number(product.price),
+            quantity: 1,
+            item_brand: product.brand || 'Luma Scents',
+            item_category: product.category || undefined,
+            options: {
+              volume: product.volume,
+            },
+          };
+
+          var payload = {
+            currency: 'INR',
+            value: Number(product.price),
+            items: [itemObj],
+            item_id: itemObj.item_id,
+            item_name: itemObj.item_name,
+            item_sku: itemObj.item_sku,
+            quantity: 1,
+            price: itemObj.price,
+            items_json: JSON.stringify([itemObj]),
+            ev_source: 'gtm',
+          };
+
+          eedl('view_item', payload);
         })();
       });
     };

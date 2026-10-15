@@ -7,6 +7,7 @@ declare global {
     eedl?: (...args: any[]) => void;
     mpDl?: any[];
     trackMpAddToCart?: (product: Product, quantity: number) => void;
+    trackMpViewItem?: (product: Product) => void;
   }
 }
 
@@ -53,10 +54,11 @@ export const trackPageView = (pagePath: string, pageTitle?: string) => {
 };
 
 /**
- * 2. Track View Item (GA4 Ecommerce)
+ * 2. Track View Item (GA4 Ecommerce + MagicPixel EEDL)
  * Triggered when a user views a specific fragrance details page.
  */
 export const trackViewItem = (product: Product) => {
+  // GA4 dataLayer event
   pushToDataLayer({
     event: 'view_item',
     ecommerce: {
@@ -75,6 +77,15 @@ export const trackViewItem = (product: Product) => {
       ],
     },
   });
+
+  // MagicPixel EEDL view_item tracking
+  if (typeof window !== 'undefined' && typeof window.trackMpViewItem === 'function') {
+    try {
+      window.trackMpViewItem(product);
+    } catch (err) {
+      console.warn('[MagicPixel] Error dispatching trackMpViewItem:', err);
+    }
+  }
 };
 
 /**
