@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, type ReactNode }
 import type { Product, CartItem, Customer, Order, ToastMessage } from '../types';
 import { calculateCartTotals } from '../utils/formatters';
 import { createOrderObject } from '../utils/orderGenerator';
+import { trackAddToCart } from '../utils/dataLayer';
 
 const CART_STORAGE_KEY = 'luma_scents_cart_v1';
 const LAST_ORDER_STORAGE_KEY = 'luma_scents_last_order_v1';
@@ -137,8 +138,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const successMsg = `Added ${quantity} × ${product.name} to cart`;
     showToast(successMsg, 'success');
 
-    // NOTE: In the future, this is the exact hook point to invoke:
-    // dataLayer.push({ event: "add_to_cart", ecommerce: { ... } });
+    // Trigger GA4 Add to Cart dataLayer event
+    trackAddToCart(product, quantity);
 
     return { success: true, message: successMsg };
   };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ChevronRight,
@@ -16,6 +16,7 @@ import { PRODUCTS, getProductById } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { formatCurrency } from '../utils/formatters';
 import { ProductCard } from '../components/ProductCard';
+import { trackViewItem } from '../utils/dataLayer';
 
 export const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +24,13 @@ export const ProductDetailPage: React.FC = () => {
   const { addToCart, items } = useCart();
 
   const product = getProductById(id || '');
+
+  // Track GA4 view_item event when product loads
+  useEffect(() => {
+    if (product) {
+      trackViewItem(product);
+    }
+  }, [product?.id]);
 
   // Local quantity selector state
   const [quantity, setQuantity] = useState<number>(1);
