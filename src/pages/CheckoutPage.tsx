@@ -12,6 +12,7 @@ import {
 import { useCart } from '../context/CartContext';
 import type { Customer } from '../types';
 import { formatCurrency } from '../utils/formatters';
+import { trackAddShippingInfo, trackAddPaymentInfo } from '../utils/dataLayer';
 
 export const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
@@ -30,6 +31,35 @@ export const CheckoutPage: React.FC = () => {
   const [errors, setErrors] = useState<Partial<Record<keyof Customer, string>>>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'upi' | 'cod'>('card');
+  const [shippingSaved, setShippingSaved] = useState(false);
+  const [paymentSaved, setPaymentSaved] = useState(false);
+
+  const getPaymentMethodLabel = (method: 'card' | 'upi' | 'cod') => {
+    switch (method) {
+      case 'card':
+        return 'Credit / Debit Card';
+      case 'upi':
+        return 'Instant UPI';
+      case 'cod':
+        return 'Cash on Delivery';
+    }
+  };
+
+  const handleSaveShippingInfo = () => {
+    const shippingTier = shipping === 0 ? 'Complimentary Express Shipping' : 'Standard Delivery';
+    trackAddShippingInfo(items, total, shippingTier);
+    setShippingSaved(true);
+  };
+
+  const handleConfirmPaymentInfo = (method: 'card' | 'upi' | 'cod' = paymentMethod) => {
+    trackAddPaymentInfo(items, total, getPaymentMethodLabel(method));
+    setPaymentSaved(true);
+  };
+
+  const handleSelectPaymentMethod = (method: 'card' | 'upi' | 'cod') => {
+    setPaymentMethod(method);
+    handleConfirmPaymentInfo(method);
+  };
 
   // If cart is empty, redirect to cart page
   if (items.length === 0) {
@@ -116,6 +146,17 @@ export const CheckoutPage: React.FC = () => {
     setIsProcessing(true);
 
     try {
+      // Ensure shipping and payment info are recorded if user skips directly to Place Order
+      if (!shippingSaved) {
+        const shippingTier = shipping === 0 ? 'Complimentary Express Shipping' : 'Standard Delivery';
+        trackAddShippingInfo(items, total, shippingTier);
+        setShippingSaved(true);
+      }
+      if (!paymentSaved) {
+        trackAddPaymentInfo(items, total, getPaymentMethodLabel(paymentMethod));
+        setPaymentSaved(true);
+      }
+
       // 2, 3, 4. Simulate processing & create typed order object
       await new Promise((resolve) => setTimeout(resolve, 800));
 
@@ -307,6 +348,24 @@ export const CheckoutPage: React.FC = () => {
                 {errors.pincode && <p className="text-xs text-red-500">{errors.pincode}</p>}
               </div>
             </div>
+
+            {/* Add Shipping Info Button Action */}
+            <div className="pt-4 border-t border-zinc-100 flex flex-wrap items-center justify-between gap-3">
+              <button
+                type="button"
+                id="add-shipping-info-button"
+                onClick={handleSaveShippingInfo}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-900 hover:bg-black text-[#FAF9F6] text-xs uppercase tracking-wider font-semibold rounded-xl transition-all active:scale-95 shadow-sm"
+              >
+                <Truck className="w-4 h-4 text-[#D4AF37]" />
+                <span>Add Shipping Info</span>
+              </button>
+              {shippingSaved && (
+                <span className="text-xs text-emerald-600 font-medium flex items-center gap-1.5 animate-fade-in">
+                  <CheckCircle className="w-4 h-4" /> Shipping info recorded (EEDL)
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Payment Method Selector (Mock) */}
@@ -317,7 +376,7 @@ export const CheckoutPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <button
                 type="button"
-                onClick={() => setPaymentMethod('card')}
+                onClick={() => handleSelectPaymentMethod('card')}
                 className={`p-4 rounded-xl border text-left transition-all ${
                   paymentMethod === 'card'
                     ? 'border-zinc-900 bg-zinc-900 text-white shadow-md'
@@ -331,7 +390,7 @@ export const CheckoutPage: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => setPaymentMethod('upi')}
+                onClick={() => handleSelectPaymentMethod('upi')}
                 className={`p-4 rounded-xl border text-left transition-all ${
                   paymentMethod === 'upi'
                     ? 'border-zinc-900 bg-zinc-900 text-white shadow-md'
@@ -345,7 +404,7 @@ export const CheckoutPage: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => setPaymentMethod('cod')}
+                onClick={() => handleSelectPaymentMethod('cod')}
                 className={`p-4 rounded-xl border text-left transition-all ${
                   paymentMethod === 'cod'
                     ? 'border-zinc-900 bg-zinc-900 text-white shadow-md'
@@ -356,6 +415,24 @@ export const CheckoutPage: React.FC = () => {
                 <div className="text-xs font-bold uppercase tracking-wider">Cash on Delivery</div>
                 <div className="text-[11px] opacity-70">Pay upon delivery</div>
               </button>
+            </div>
+
+            {/* Add Payment Info Button Action */}
+            <div className="pt-3 border-t border-zinc-100 flex flex-wrap items-center justify-between gap-3">
+              <button
+                type="button"
+                id="add-payment-info-button"
+                onClick={() => handleConfirmPaymentInfo(paymentMethod)}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-900 hover:bg-black text-[#FAF9F6] text-xs uppercase tracking-wider font-semibold rounded-xl transition-all active:scale-95 shadow-sm"
+              >
+                <CreditCard className="w-4 h-4 text-[#D4AF37]" />
+                <span>Add Payment Info</span>
+              </button>
+              {paymentSaved && (
+                <span className="text-xs text-emerald-600 font-medium flex items-center gap-1.5 animate-fade-in">
+                  <CheckCircle className="w-4 h-4" /> {getPaymentMethodLabel(paymentMethod)} recorded (EEDL)
+                </span>
+              )}
             </div>
           </div>
         </div>

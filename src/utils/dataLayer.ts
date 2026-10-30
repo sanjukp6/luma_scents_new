@@ -10,6 +10,8 @@ declare global {
     trackMpViewItem?: (product: Product) => void;
     trackMpViewCart?: (items: CartItem[], total: number) => void;
     trackMpBeginCheckout?: (items: CartItem[], total: number) => void;
+    trackMpAddShippingInfo?: (items: CartItem[], total: number, shippingTier: string) => void;
+    trackMpAddPaymentInfo?: (items: CartItem[], total: number, paymentType: string) => void;
   }
 }
 
@@ -249,6 +251,126 @@ export const trackBeginCheckout = (items: CartItem[], total: number) => {
       });
     } catch (err) {
       console.warn('[EEDL] Error dispatching begin_checkout:', err);
+    }
+  }
+};
+
+/**
+ * 6. Track Add Shipping Info (MagicPixel EEDL)
+ * Triggered when a user confirms or enters shipping/delivery details.
+ */
+export const trackAddShippingInfo = (
+  items: CartItem[],
+  total: number,
+  shippingTier: string = 'Standard Delivery'
+) => {
+  // Developer inspection log
+  if (import.meta.env.DEV || true) {
+    console.log(
+      '%c[MagicPixel EEDL] %cadd_shipping_info',
+      'background: #121212; color: #D4AF37; font-weight: bold; padding: 2px 6px; border-radius: 4px;',
+      'color: #10b981; font-weight: bold;',
+      { shippingTier, total, itemCount: items.length }
+    );
+  }
+
+  // MagicPixel EEDL add_shipping_info tracking
+  if (typeof window !== 'undefined' && typeof window.trackMpAddShippingInfo === 'function') {
+    try {
+      window.trackMpAddShippingInfo(items, total, shippingTier);
+    } catch (err) {
+      console.warn('[MagicPixel] Error dispatching trackMpAddShippingInfo:', err);
+    }
+  } else if (typeof window !== 'undefined' && typeof (window as any).eedl === 'function') {
+    try {
+      const cartId =
+        (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('mp_cart_id')) ||
+        'cart_' + Date.now().toString(36);
+      const itemsList = items.map((item, idx) => ({
+        item_id: String(item.product.id),
+        item_name: item.product.name,
+        item_sku: String((item.product as any).sku || item.product.id),
+        variant_id: item.product.variant || undefined,
+        index: idx,
+        price: Number(item.product.price),
+        quantity: Number(item.quantity || 1),
+        item_brand: item.product.brand || 'Luma Scents',
+        item_category: item.product.category || undefined,
+        options: {
+          volume: (item.product as any).volume,
+        },
+      }));
+
+      (window as any).eedl('add_shipping_info', {
+        currency: 'INR',
+        cart_id: cartId,
+        value: Number(total),
+        shipping_tier: shippingTier,
+        items: itemsList,
+        ev_source: 'gtm',
+      });
+    } catch (err) {
+      console.warn('[EEDL] Error dispatching add_shipping_info:', err);
+    }
+  }
+};
+
+/**
+ * 7. Track Add Payment Info (MagicPixel EEDL)
+ * Triggered when a user selects or confirms their payment method.
+ */
+export const trackAddPaymentInfo = (
+  items: CartItem[],
+  total: number,
+  paymentType: string = 'Credit Card'
+) => {
+  // Developer inspection log
+  if (import.meta.env.DEV || true) {
+    console.log(
+      '%c[MagicPixel EEDL] %cadd_payment_info',
+      'background: #121212; color: #D4AF37; font-weight: bold; padding: 2px 6px; border-radius: 4px;',
+      'color: #10b981; font-weight: bold;',
+      { paymentType, total, itemCount: items.length }
+    );
+  }
+
+  // MagicPixel EEDL add_payment_info tracking
+  if (typeof window !== 'undefined' && typeof window.trackMpAddPaymentInfo === 'function') {
+    try {
+      window.trackMpAddPaymentInfo(items, total, paymentType);
+    } catch (err) {
+      console.warn('[MagicPixel] Error dispatching trackMpAddPaymentInfo:', err);
+    }
+  } else if (typeof window !== 'undefined' && typeof (window as any).eedl === 'function') {
+    try {
+      const cartId =
+        (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('mp_cart_id')) ||
+        'cart_' + Date.now().toString(36);
+      const itemsList = items.map((item, idx) => ({
+        item_id: String(item.product.id),
+        item_name: item.product.name,
+        item_sku: String((item.product as any).sku || item.product.id),
+        variant_id: item.product.variant || undefined,
+        index: idx,
+        price: Number(item.product.price),
+        quantity: Number(item.quantity || 1),
+        item_brand: item.product.brand || 'Luma Scents',
+        item_category: item.product.category || undefined,
+        options: {
+          volume: (item.product as any).volume,
+        },
+      }));
+
+      (window as any).eedl('add_payment_info', {
+        currency: 'INR',
+        cart_id: cartId,
+        value: Number(total),
+        payment_type: paymentType,
+        items: itemsList,
+        ev_source: 'gtm',
+      });
+    } catch (err) {
+      console.warn('[EEDL] Error dispatching add_payment_info:', err);
     }
   }
 };
