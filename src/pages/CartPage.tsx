@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Trash2,
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { formatCurrency, FREE_SHIPPING_THRESHOLD } from '../utils/formatters';
+import { trackViewCart } from '../utils/dataLayer';
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate();
@@ -25,6 +26,16 @@ export const CartPage: React.FC = () => {
     removeFromCart,
     clearCart,
   } = useCart();
+
+  const hasTrackedViewCart = useRef(false);
+
+  // Track GA4 Ecommerce and MagicPixel EEDL view_cart when user views cart
+  useEffect(() => {
+    if (items.length > 0 && !hasTrackedViewCart.current) {
+      hasTrackedViewCart.current = true;
+      trackViewCart(items, total);
+    }
+  }, [items, total]);
 
   const isFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
   const amountNeeded = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
