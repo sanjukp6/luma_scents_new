@@ -11,7 +11,7 @@ declare global {
     trackMpViewCart?: (items: CartItem[], total: number) => void;
     trackMpBeginCheckout?: (items: CartItem[], total: number) => void;
     trackMpAddShippingInfo?: (items: CartItem[], total: number, shippingTier: string) => void;
-    trackMpAddPaymentInfo?: (items: CartItem[], total: number, paymentType: string) => void;
+    trackMpAddPaymentInfo?: (items: CartItem[], total: number, paymentType: string, shipping?: number) => void;
   }
 }
 
@@ -316,28 +316,29 @@ export const trackAddShippingInfo = (
 };
 
 /**
- * 7. Track Add Payment Info (MagicPixel EEDL)
+ * 7. Track Add Payment Info (MagicPixel EEDL - mp_add_payment_info)
  * Triggered when a user selects or confirms their payment method.
  */
 export const trackAddPaymentInfo = (
   items: CartItem[],
   total: number,
-  paymentType: string = 'Credit Card'
+  paymentType: string = 'Credit Card',
+  shipping: number = 0
 ) => {
   // Developer inspection log
   if (import.meta.env.DEV || true) {
     console.log(
-      '%c[MagicPixel EEDL] %cadd_payment_info',
+      '%c[MagicPixel EEDL] %cmp_add_payment_info',
       'background: #121212; color: #D4AF37; font-weight: bold; padding: 2px 6px; border-radius: 4px;',
       'color: #10b981; font-weight: bold;',
-      { paymentType, total, itemCount: items.length }
+      { paymentType, total, shipping, itemCount: items.length }
     );
   }
 
-  // MagicPixel EEDL add_payment_info tracking
+  // MagicPixel EEDL mp_add_payment_info tracking
   if (typeof window !== 'undefined' && typeof window.trackMpAddPaymentInfo === 'function') {
     try {
-      window.trackMpAddPaymentInfo(items, total, paymentType);
+      window.trackMpAddPaymentInfo(items, total, paymentType, shipping);
     } catch (err) {
       console.warn('[MagicPixel] Error dispatching trackMpAddPaymentInfo:', err);
     }
@@ -361,16 +362,18 @@ export const trackAddPaymentInfo = (
         },
       }));
 
-      (window as any).eedl('add_payment_info', {
+      (window as any).eedl('mp_add_payment_info', {
         currency: 'INR',
         cart_id: cartId,
         value: Number(total),
+        coupon: undefined,
         payment_type: paymentType,
+        shipping: Number(shipping),
         items: itemsList,
-        ev_source: 'gtm',
+        ev_source: 'ingestlabs',
       });
     } catch (err) {
-      console.warn('[EEDL] Error dispatching add_payment_info:', err);
+      console.warn('[EEDL] Error dispatching mp_add_payment_info:', err);
     }
   }
 };

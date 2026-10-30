@@ -52,7 +52,7 @@ export const CheckoutPage: React.FC = () => {
   };
 
   const handleConfirmPaymentInfo = (method: 'card' | 'upi' | 'cod' = paymentMethod) => {
-    trackAddPaymentInfo(items, total, getPaymentMethodLabel(method));
+    trackAddPaymentInfo(items, total, getPaymentMethodLabel(method), shipping);
     setPaymentSaved(true);
   };
 
@@ -153,7 +153,7 @@ export const CheckoutPage: React.FC = () => {
         setShippingSaved(true);
       }
       if (!paymentSaved) {
-        trackAddPaymentInfo(items, total, getPaymentMethodLabel(paymentMethod));
+        trackAddPaymentInfo(items, total, getPaymentMethodLabel(paymentMethod), shipping);
         setPaymentSaved(true);
       }
 

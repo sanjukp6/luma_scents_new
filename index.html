@@ -225,7 +225,7 @@
       });
     };
 
-    window.trackMpAddPaymentInfo = function (items, totalValue, paymentType) {
+    window.trackMpAddPaymentInfo = function (items, totalValue, paymentType, shippingFee) {
       window._mp.waitUntil(function () { return window._mp && window._mp.eedlInstance; }, 15000, 100, function () {
         window._mp.safeExecute('evAddPaymentInfo', function () {
           var cartId = window.sessionStorage.getItem('mp_cart_id');
@@ -260,12 +260,14 @@
             currency: 'INR',
             cart_id: cartId,
             value: Number(calculatedTotal),
+            coupon: undefined,
             payment_type: paymentType || 'Credit Card',
+            shipping: Number(shippingFee || 0),
             items: itemsList,
-            ev_source: 'gtm',
+            ev_source: 'ingestlabs',
           };
 
-          eedl('add_payment_info', payload);
+          eedl('mp_add_payment_info', payload);
         })();
       });
     };
