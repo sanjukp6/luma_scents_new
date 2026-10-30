@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { formatCurrency, FREE_SHIPPING_THRESHOLD } from '../utils/formatters';
-import { trackViewCart } from '../utils/dataLayer';
+import { trackViewCart, trackBeginCheckout } from '../utils/dataLayer';
 
 export const CartPage: React.FC = () => {
   const navigate = useNavigate();
@@ -40,6 +40,13 @@ export const CartPage: React.FC = () => {
   const isFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
   const amountNeeded = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
   const progressPercent = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
+
+  const handleProceedToCheckout = () => {
+    if (items.length > 0) {
+      trackBeginCheckout(items, total);
+    }
+    navigate('/checkout');
+  };
 
   if (items.length === 0) {
     return (
@@ -259,7 +266,7 @@ export const CartPage: React.FC = () => {
             {/* Checkout Action */}
             <button
               id="proceed-to-checkout-button"
-              onClick={() => navigate('/checkout')}
+              onClick={handleProceedToCheckout}
               className="w-full py-4 px-6 bg-[#121212] hover:bg-black text-[#FAF9F6] text-xs uppercase tracking-[0.2em] font-semibold rounded-xl shadow-lg transition-transform active:scale-[0.98] flex items-center justify-center gap-2"
             >
               <span>Proceed to Checkout</span>

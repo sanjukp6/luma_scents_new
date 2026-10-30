@@ -135,6 +135,50 @@
         })();
       });
     };
+
+    window.trackMpBeginCheckout = function (items, totalValue) {
+      window._mp.waitUntil(function () { return window._mp && window._mp.eedlInstance; }, 15000, 100, function () {
+        window._mp.safeExecute('evBeginCheckout', function () {
+          var cartId = window.sessionStorage.getItem('mp_cart_id');
+          if (!cartId) {
+            cartId = 'cart_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
+            window.sessionStorage.setItem('mp_cart_id', cartId);
+          }
+
+          var itemsList = (items || []).map(function (cartItem, idx) {
+            var prod = cartItem.product || cartItem;
+            return {
+              item_id: String(prod.id),
+              item_name: prod.name,
+              item_sku: String(prod.sku || prod.id),
+              variant_id: prod.variant || undefined,
+              index: idx,
+              price: Number(prod.price),
+              quantity: Number(cartItem.quantity || 1),
+              item_brand: prod.brand || 'Luma Scents',
+              item_category: prod.category || undefined,
+              options: {
+                volume: prod.volume,
+              },
+            };
+          });
+
+          var calculatedTotal = typeof totalValue === 'number'
+            ? totalValue
+            : itemsList.reduce(function (acc, item) { return acc + (item.price * item.quantity); }, 0);
+
+          var payload = {
+            currency: 'INR',
+            cart_id: cartId,
+            value: Number(calculatedTotal),
+            items: itemsList,
+            ev_source: 'gtm',
+          };
+
+          eedl('begin_checkout', payload);
+        })();
+      });
+    };
   </script>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />

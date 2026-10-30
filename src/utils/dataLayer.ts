@@ -9,6 +9,7 @@ declare global {
     trackMpAddToCart?: (product: Product, quantity: number) => void;
     trackMpViewItem?: (product: Product) => void;
     trackMpViewCart?: (items: CartItem[], total: number) => void;
+    trackMpBeginCheckout?: (items: CartItem[], total: number) => void;
   }
 }
 
@@ -184,6 +185,70 @@ export const trackViewCart = (items: CartItem[], total: number) => {
       });
     } catch (err) {
       console.warn('[EEDL] Error dispatching view_cart:', err);
+    }
+  }
+};
+
+/**
+ * 5. Track Begin Checkout (GA4 Ecommerce + MagicPixel EEDL)
+ * Triggered when a user clicks Proceed to Checkout from the cart.
+ */
+export const trackBeginCheckout = (items: CartItem[], total: number) => {
+  // GA4 dataLayer event
+  pushToDataLayer({
+    event: 'begin_checkout',
+    ecommerce: {
+      currency: 'INR',
+      value: total,
+      items: items.map((cartItem, idx) => ({
+        item_id: cartItem.product.id,
+        item_name: cartItem.product.name,
+        item_brand: cartItem.product.brand || 'Luma Scents',
+        item_category: cartItem.product.category,
+        item_variant: cartItem.product.variant,
+        price: cartItem.product.price,
+        quantity: cartItem.quantity,
+        index: idx,
+      })),
+    },
+  });
+
+  // MagicPixel EEDL begin_checkout tracking
+  if (typeof window !== 'undefined' && typeof window.trackMpBeginCheckout === 'function') {
+    try {
+      window.trackMpBeginCheckout(items, total);
+    } catch (err) {
+      console.warn('[MagicPixel] Error dispatching trackMpBeginCheckout:', err);
+    }
+  } else if (typeof window !== 'undefined' && typeof (window as any).eedl === 'function') {
+    try {
+      const cartId =
+        (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('mp_cart_id')) ||
+        'cart_' + Date.now().toString(36);
+      const itemsList = items.map((item, idx) => ({
+        item_id: String(item.product.id),
+        item_name: item.product.name,
+        item_sku: String((item.product as any).sku || item.product.id),
+        variant_id: item.product.variant || undefined,
+        index: idx,
+        price: Number(item.product.price),
+        quantity: Number(item.quantity || 1),
+        item_brand: item.product.brand || 'Luma Scents',
+        item_category: item.product.category || undefined,
+        options: {
+          volume: (item.product as any).volume,
+        },
+      }));
+
+      (window as any).eedl('begin_checkout', {
+        currency: 'INR',
+        cart_id: cartId,
+        value: Number(total),
+        items: itemsList,
+        ev_source: 'gtm',
+      });
+    } catch (err) {
+      console.warn('[EEDL] Error dispatching begin_checkout:', err);
     }
   }
 };
